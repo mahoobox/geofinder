@@ -79,7 +79,7 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-background text-foreground">
       <Header />
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        <div className="md:w-[400px] md:flex-shrink-0 flex flex-col overflow-y-auto">
+        <div className="md:w-[400px] md:flex-shrink-0 flex-1 flex flex-col overflow-y-auto">
           <ControlPanel
             coordinates={coordinates}
             setCoordinates={setCoordinates}

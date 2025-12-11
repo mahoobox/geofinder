@@ -130,7 +130,7 @@ export default function ControlPanel({
       a.href = url;
       a.download = "parcela.kml";
       document.body.appendChild(a);
-      a.click();
+a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -154,7 +154,7 @@ export default function ControlPanel({
       a.href = url;
       a.download = "parcela.kmz";
       document.body.appendChild(a);
-      a.click();
+a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -167,8 +167,7 @@ export default function ControlPanel({
   };
 
   return (
-    <div className="bg-card text-card-foreground md:border-r h-full flex flex-col">
-      <div className="p-6 space-y-6">
+    <div className="bg-card text-card-foreground md:border-r h-full flex flex-col p-6 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Entrada de Coordenadas</CardTitle>
@@ -212,10 +211,9 @@ export default function ControlPanel({
             </Form>
           </CardContent>
         </Card>
-      </div>
 
         {geoJson && (
-          <div className="p-6 pt-0 space-y-6 flex-1 overflow-y-auto">
+          <>
             <ParcelDetails feature={geoJson.features[0]} />
 
             <Card>
@@ -263,7 +261,7 @@ export default function ControlPanel({
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </>
         )}
     </div>
   );
