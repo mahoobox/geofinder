@@ -11,13 +11,14 @@ import {
   Search,
   Trash2,
   View,
-  FileArchive
+  FileArchive,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
@@ -37,8 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import type { GeoCoordinates } from "@/lib/types";
 
 type FormValues = {
-  lat: number;
-  lng: number;
+  coords: string;
 };
 
 type ControlPanelProps = {
@@ -62,36 +62,50 @@ export default function ControlPanel({
 
   const form = useForm<FormValues>({
     defaultValues: {
-      lat: undefined,
-      lng: undefined,
+      coords: "",
     },
   });
 
   useEffect(() => {
     if (coordinates) {
-      form.setValue("lat", parseFloat(coordinates[0].toFixed(6)));
-      form.setValue("lng", parseFloat(coordinates[1].toFixed(6)));
+      form.setValue("coords", `${coordinates[0].toFixed(6)}, ${coordinates[1].toFixed(6)}`);
       form.clearErrors();
     } else {
-      form.reset({ lat: undefined, lng: undefined });
+      form.reset({ coords: "" });
     }
   }, [coordinates, form]);
 
   function onSubmit(values: FormValues) {
-    if (values.lat === undefined || values.lng === undefined) {
-      form.setError("lat", { message: "Requerido" });
-      form.setError("lng", { message: "Requerido" });
+    const { coords } = values;
+    if (!coords) {
+        form.setError("coords", { message: "Se requieren coordenadas." });
+        return;
+    }
+
+    const parts = coords.split(",").map(part => part.trim());
+    
+    if (parts.length !== 2) {
+        form.setError("coords", { message: "Formato inválido. Use 'lat, lng'." });
+        return;
+    }
+
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+
+    if (isNaN(lat) || isNaN(lng)) {
+        form.setError("coords", { message: "Coordenadas no válidas." });
+        return;
+    }
+
+    if (lat < -90 || lat > 90) {
+      form.setError("coords", { message: "Latitud debe estar entre -90 y 90." });
       return;
     }
-     if (values.lat < -90 || values.lat > 90) {
-      form.setError("lat", { message: "Inválido" });
+    if (lng < -180 || lng > 180) {
+      form.setError("coords", { message: "Longitud debe estar entre -180 y 180." });
       return;
     }
-    if (values.lng < -180 || values.lng > 180) {
-      form.setError("lng", { message: "Inválido" });
-      return;
-    }
-    onQuery([values.lat, values.lng]);
+    onQuery([lat, lng]);
   }
 
   const handleCopyGeoJson = () => {
@@ -158,37 +172,21 @@ export default function ControlPanel({
               <CardTitle className="text-xl">Entrada de Coordenadas</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground mb-4 text-sm">
-                Ingrese coordenadas (WGS84) o seleccione un punto en el mapa.
-              </p>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormItem>
-                      <FormLabel>Latitud</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="any"
-                          placeholder="4.886458"
-                          {...form.register("lat", { valueAsNumber: true })}
-                        />
-                      </FormControl>
-                      <FormMessage>{form.formState.errors.lat?.message}</FormMessage>
-                    </FormItem>
-                    <FormItem>
-                      <FormLabel>Longitud</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="any"
-                          placeholder="-75.050740"
-                          {...form.register("lng", { valueAsNumber: true })}
-                        />
-                      </FormControl>
-                      <FormMessage>{form.formState.errors.lng?.message}</FormMessage>
-                    </FormItem>
-                  </div>
+                  <FormItem>
+                    <FormLabel>Coordenadas (Lat, Lng)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="4.886458, -75.050740"
+                        {...form.register("coords")}
+                      />
+                    </FormControl>
+                     <FormDescription>
+                       Pegue las coordenadas o seleccione un punto en el mapa.
+                    </FormDescription>
+                    <FormMessage>{form.formState.errors.coords?.message}</FormMessage>
+                  </FormItem>
                   <div className="flex flex-wrap gap-2">
                     <Button type="submit" disabled={isLoading} className="flex-grow bg-accent hover:bg-accent/90">
                       {isLoading ? (
@@ -265,3 +263,5 @@ export default function ControlPanel({
     </div>
   );
 }
+
+    
