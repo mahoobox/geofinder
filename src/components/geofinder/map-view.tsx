@@ -1,15 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
-  APIProvider,
-  Map,
-  AdvancedMarker,
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  GeoJSON,
   useMap,
-} from "@vis.gl/react-google-maps";
+} from "react-leaflet";
 import type { FeatureCollection } from "geojson";
 import type { GeoCoordinates } from "@/lib/types";
-import { AlertCircle, Loader2 } from "lucide-react";
+import L from "leaflet";
+
+// Fix for default icon issues with webpack
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
+
 
 type MapViewProps = {
   center: GeoCoordinates | null;
@@ -17,105 +28,81 @@ type MapViewProps = {
   onMapClick: (coords: GeoCoordinates) => void;
 };
 
-function PolygonLayer({ geoJson }: { geoJson: FeatureCollection | null }) {
-  const map = useMap();
-  const [dataFeature, setDataFeature] = useState<google.maps.Data.Feature[]>([]);
-
-  useEffect(() => {
-    if (!map) return;
-
-    // Clear previous polygons
-    dataFeature.forEach((feature) => {
-      map.data.remove(feature);
-    });
-
-    if (geoJson) {
-      const features = map.data.addGeoJson(geoJson);
-      setDataFeature(features);
-      map.data.setStyle({
-        fillColor: "hsl(var(--accent))",
-        strokeColor: "hsl(var(--primary))",
-        strokeWeight: 2,
-        fillOpacity: 0.3,
-      });
-
-      // Zoom to polygon
-      const bounds = new google.maps.LatLngBounds();
-      map.data.forEach((feature) => {
-        feature.getGeometry()?.forEachLatLng((latlng) => {
-          bounds.extend(latlng);
-        });
-      });
-      if (!bounds.isEmpty()) {
-        map.fitBounds(bounds);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, geoJson]);
-
+function MapClickHandler({
+  onMapClick,
+}: {
+  onMapClick: (coords: GeoCoordinates) => void;
+}) {
+  useMap().on("click", (e) => {
+    onMapClick(e.latlng);
+  });
   return null;
 }
 
-export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+function ChangeView({ center, zoom }: { center: L.LatLngExpression; zoom: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [map, center, zoom]);
+  return null;
+}
 
-  const [mapCenter, setMapCenter] = useState({
-    lat: -34.6037,
-    lng: -58.3816,
-  });
-
-  const mapRef = useRef<google.maps.Map | null>(null);
+function GeoJsonLayer({ geoJson }: { geoJson: FeatureCollection | null }) {
+  const map = useMap();
 
   useEffect(() => {
-    if (center && mapRef.current) {
-        // Only pan if there's no GeoJSON to fit bounds to
-        if (!geoJson) {
-            mapRef.current.panTo(center);
-        }
+    if (geoJson && map) {
+      const geoJsonLayer = L.geoJSON(geoJson);
+      const bounds = geoJsonLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds);
+      }
+    }
+  }, [geoJson, map]);
+
+  if (!geoJson) {
+    return null;
+  }
+  
+  const style = {
+    fillColor: "hsl(var(--accent))",
+    weight: 2,
+    opacity: 1,
+    color: "hsl(var(--primary))",
+    fillOpacity: 0.3,
+  };
+
+  return <GeoJSON data={geoJson} style={style} />;
+}
+
+
+export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
+  const defaultCenter: L.LatLngExpression = [ -34.6037, -58.3816 ];
+
+  const mapRef = useRef<L.Map>(null);
+
+  useEffect(() => {
+    if (center && mapRef.current && !geoJson) {
+      mapRef.current.panTo(center);
     }
   }, [center, geoJson]);
 
-  if (!apiKey) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-muted p-8 text-center">
-        <div className="flex flex-col items-center gap-4">
-            <AlertCircle className="h-16 w-16 text-destructive"/>
-            <h2 className="text-2xl font-bold">Configuración Requerida</h2>
-            <p className="text-muted-foreground">
-                La clave de API de Google Maps no está configurada. Por favor, añada
-                <code className="bg-destructive/20 text-destructive-foreground p-1 rounded-md mx-1 font-mono">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>
-                a su archivo de entorno para mostrar el mapa.
-            </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="h-full w-full relative">
-       <APIProvider apiKey={apiKey} libraries={['marker']}>
-        <Map
-            ref={mapRef}
-            defaultCenter={mapCenter}
-            defaultZoom={12}
-            minZoom={3}
-            maxZoom={20}
-            mapId="geofinder_map"
-            className="w-full h-full border-none"
-            gestureHandling={'greedy'}
-            disableDefaultUI={true}
-            onClick={(e) => {
-                const lat = e.detail.latLng?.lat;
-                const lng = e.detail.latLng?.lng;
-                if(lat && lng) {
-                    onMapClick({ lat, lng })
-                }
-            }}
-        >
-          {center && <AdvancedMarker position={center} />}
-          <PolygonLayer geoJson={geoJson} />
-        </Map>
-       </APIProvider>
-    </div>
+    <MapContainer
+      ref={mapRef}
+      center={defaultCenter}
+      zoom={12}
+      className="w-full h-full border-none"
+      style={{ height: "100%", width: "100%" }}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <MapClickHandler onMapClick={onMapClick} />
+      {center && <Marker position={center} />}
+      <GeoJsonLayer geoJson={geoJson} />
+    </MapContainer>
   );
 }

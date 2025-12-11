@@ -2,13 +2,20 @@
 
 import { useState } from "react";
 import type { FeatureCollection } from "geojson";
+import dynamic from 'next/dynamic';
 
 import { getParcelData } from "@/app/actions";
 import ControlPanel from "@/components/geofinder/control-panel";
-import MapView from "@/components/geofinder/map-view";
 import Header from "@/components/geofinder/header";
 import { useToast } from "@/hooks/use-toast";
 import type { GeoCoordinates } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const MapView = dynamic(() => import('@/components/geofinder/map-view'), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-muted flex items-center justify-center"><Skeleton className="h-full w-full" /></div>,
+});
+
 
 export default function Home() {
   const [coordinates, setCoordinates] = useState<GeoCoordinates | null>(null);

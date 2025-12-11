@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import type { FeatureCollection } from "geojson";
 import {
   ClipboardCopy,
@@ -18,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormField,
   FormItem,
   FormLabel,
   FormMessage,
@@ -37,16 +34,10 @@ import { geojsonToKml } from "@/lib/kml";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import type { GeoCoordinates } from "@/lib/types";
 
-const formSchema = z.object({
-  lat: z
-    .number({ invalid_type_error: "Debe ser un número" })
-    .min(-90, "Debe ser mayor que -90")
-    .max(90, "Debe ser menor que 90"),
-  lng: z
-    .number({ invalid_type_error: "Debe ser un número" })
-    .min(-180, "Debe ser mayor que -180")
-    .max(180, "Debe ser menor que 180"),
-});
+type FormValues = {
+  lat: number;
+  lng: number;
+};
 
 type ControlPanelProps = {
   coordinates: GeoCoordinates | null;
@@ -67,8 +58,7 @@ export default function ControlPanel({
   const [isGeoJsonDialogOpen, setIsGeoJsonDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<FormValues>({
     defaultValues: {
       lat: undefined,
       lng: undefined,
@@ -85,7 +75,20 @@ export default function ControlPanel({
     }
   }, [coordinates, form]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: FormValues) {
+    if (values.lat === undefined || values.lng === undefined) {
+      form.setError("lat", { message: "Requerido" });
+      form.setError("lng", { message: "Requerido" });
+      return;
+    }
+     if (values.lat < -90 || values.lat > 90) {
+      form.setError("lat", { message: "Inválido" });
+      return;
+    }
+    if (values.lng < -180 || values.lng > 180) {
+      form.setError("lng", { message: "Inválido" });
+      return;
+    }
     onQuery(values);
   }
 
@@ -135,44 +138,30 @@ export default function ControlPanel({
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="lat"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Latitud</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="any"
-                              placeholder="-34.6037"
-                              {...field}
-                              onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="lng"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Longitud</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="any"
-                              placeholder="-58.3816"
-                              {...field}
-                              onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormItem>
+                      <FormLabel>Latitud</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="-34.6037"
+                          {...form.register("lat", { valueAsNumber: true })}
+                        />
+                      </FormControl>
+                      <FormMessage>{form.formState.errors.lat?.message}</FormMessage>
+                    </FormItem>
+                    <FormItem>
+                      <FormLabel>Longitud</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="-58.3816"
+                          {...form.register("lng", { valueAsNumber: true })}
+                        />
+                      </FormControl>
+                      <FormMessage>{form.formState.errors.lng?.message}</FormMessage>
+                    </FormItem>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button type="submit" disabled={isLoading} className="flex-grow bg-accent hover:bg-accent/90">
