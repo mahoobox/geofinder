@@ -79,7 +79,7 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-background text-foreground">
       <Header />
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        <div className="md:w-[400px] md:flex-shrink-0 flex-1 flex flex-col overflow-y-auto">
+        <div className="md:w-[400px] md:flex-shrink-0 flex flex-col overflow-y-auto">
           <ControlPanel
             coordinates={coordinates}
             setCoordinates={setCoordinates}
@@ -89,7 +89,7 @@ export default function Home() {
             onClear={handleClear}
           />
         </div>
-        <div className="flex-1 md:order-first h-64 md:h-full w-full">
+        <div className="flex-1 h-64 md:h-full w-full">
             <MapView
               center={coordinates}
               geoJson={geoJson}
