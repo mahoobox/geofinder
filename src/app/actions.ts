@@ -12,7 +12,6 @@ export async function getParcelData(lat: number, lon: number): Promise<{ data?: 
 
   // The query is constructed for the ArcGIS REST API
   const queryParams = new URLSearchParams({
-    where: "1=1",
     outFields: "*",
     geometry: `${lon},${lat}`,
     geometryType: "esriGeometryPoint",
