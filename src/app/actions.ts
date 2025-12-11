@@ -4,7 +4,7 @@ import type { FeatureCollection } from "geojson";
 
 export async function getParcelData(lat: number, lon: number): Promise<{ data?: FeatureCollection; error?: string }> {
   const baseUrl = process.env.BASE_URL_ARGIS_CATASTRAL;
-  const apiKey = process.env.API_KEY_CATASTRAL; 
+  const apiKey = process.env.API_KEY_CATASTRAL; // Kept in case it's needed for other requests in the future
 
   if (!baseUrl) {
     return { error: "La URL base del servicio de catastro no está configurada en el servidor." };
@@ -31,17 +31,9 @@ export async function getParcelData(lat: number, lon: number): Promise<{ data?: 
   console.log("Consultando URL:", fullUrl);
 
   try {
-    const fetchOptions: RequestInit = {
-        headers: {}
-    };
-
-    if (apiKey) {
-      // ArcGIS can use tokens in different ways. A common way is via an 'Authorization' header.
-      // Another is a `token` query parameter. Adjust if the service requires a different method.
-      (fetchOptions.headers as HeadersInit)['Authorization'] = `Bearer ${apiKey}`;
-    }
-
-    const response = await fetch(fullUrl, fetchOptions);
+    // This API does not seem to require an Authorization header, unlike what was previously assumed.
+    // The working Python script does not use one, so we will omit it here as well.
+    const response = await fetch(fullUrl);
 
     if (!response.ok) {
       const errorText = await response.text();
