@@ -88,7 +88,7 @@ export default function Home() {
             onQuery={handleQuery}
             onClear={handleClear}
           />
-          <div className="mb-[300px] md:hidden" />
+          <div className="mb-[600px] md:hidden" />
         </div>
         <div className="md:flex-1 h-[250px] md:h-full w-full fixed bottom-0 md:static">
             <MapView
