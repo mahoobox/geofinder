@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
-  Popup,
   GeoJSON,
   useMap,
 } from "react-leaflet";
@@ -77,9 +76,13 @@ function GeoJsonLayer({ geoJson }: { geoJson: FeatureCollection | null }) {
 
 
 export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
+  const [isClient, setIsClient] = useState(false);
   const defaultCenter: L.LatLngExpression = [ -34.6037, -58.3816 ];
-
   const mapRef = useRef<L.Map>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (center && mapRef.current && !geoJson) {
@@ -87,6 +90,9 @@ export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
     }
   }, [center, geoJson]);
 
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <MapContainer
