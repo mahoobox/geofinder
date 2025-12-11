@@ -8,6 +8,11 @@ export function geojsonToKml(geojson: FeatureCollection): string {
   let kmlPolygons = '';
 
   geojson.features.forEach(feature => {
+    // Assign a style to each placemark
+    const placemarkContent = `
+        <styleUrl>#customStyle</styleUrl>
+        <name>${feature.properties?.CODIGO || feature.properties?.name || 'Parcela'}</name>`;
+
     if (feature.geometry.type === 'Polygon') {
       const geom = feature.geometry as Polygon;
       const outerBoundary = coordinatesToKml(geom.coordinates[0]);
@@ -16,17 +21,17 @@ export function geojsonToKml(geojson: FeatureCollection): string {
       ).join('');
 
       kmlPolygons += `
-        <Placemark>
-          <name>${feature.properties?.name || 'Parcela'}</name>
-          <Polygon>
-            <outerBoundaryIs>
-              <LinearRing>
-                <coordinates>${outerBoundary}</coordinates>
-              </LinearRing>
-            </outerBoundaryIs>
-            ${innerBoundaries}
-          </Polygon>
-        </Placemark>`;
+      <Placemark>
+        ${placemarkContent}
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <coordinates>${outerBoundary}</coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+          ${innerBoundaries}
+        </Polygon>
+      </Placemark>`;
     } else if (feature.geometry.type === 'MultiPolygon') {
         const geom = feature.geometry as MultiPolygon;
         geom.coordinates.forEach(polygonCoords => {
@@ -37,15 +42,17 @@ export function geojsonToKml(geojson: FeatureCollection): string {
 
             kmlPolygons += `
             <Placemark>
-              <name>${feature.properties?.name || 'Parcela'}</name>
-              <Polygon>
-                <outerBoundaryIs>
-                  <LinearRing>
-                    <coordinates>${outerBoundary}</coordinates>
-                  </LinearRing>
-                </outerBoundaryIs>
-                ${innerBoundaries}
-              </Polygon>
+              ${placemarkContent}
+              <MultiGeometry>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>${outerBoundary}</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                  ${innerBoundaries}
+                </Polygon>
+              </MultiGeometry>
             </Placemark>`;
         });
     }
@@ -63,7 +70,7 @@ export function geojsonToKml(geojson: FeatureCollection): string {
       </LineStyle>
       <PolyStyle>
         <color>4d73a3d9</color> <!-- D9A373 with 30% opacity -->
-        <fill>1</fill>
+        <fill>0</fill> <!-- Set fill to 0 for no fill -->
         <outline>1</outline>
       </PolyStyle>
     </Style>
