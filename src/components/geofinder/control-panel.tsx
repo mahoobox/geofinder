@@ -67,8 +67,8 @@ export default function ControlPanel({
 
   useEffect(() => {
     if (coordinates) {
-      form.setValue("lat", parseFloat(coordinates.lat.toFixed(6)));
-      form.setValue("lng", parseFloat(coordinates.lng.toFixed(6)));
+      form.setValue("lat", parseFloat(coordinates[0].toFixed(6)));
+      form.setValue("lng", parseFloat(coordinates[1].toFixed(6)));
       form.clearErrors();
     } else {
       form.reset({ lat: undefined, lng: undefined });
@@ -89,7 +89,7 @@ export default function ControlPanel({
       form.setError("lng", { message: "Inválido" });
       return;
     }
-    onQuery(values);
+    onQuery([values.lat, values.lng]);
   }
 
   const handleCopyGeoJson = () => {
