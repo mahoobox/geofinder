@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Map, Marker, GeoJson } from "pigeon-maps";
 import { osm } from 'pigeon-maps/providers'
-import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
+import type { FeatureCollection } from "geojson";
 import type { GeoCoordinates } from "@/lib/types";
 
 type MapViewProps = {
@@ -13,8 +13,9 @@ type MapViewProps = {
 };
 
 export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
-  const [mapCenter, setMapCenter] = useState<GeoCoordinates>([-34.6037, -58.3816]);
-  const [zoom, setZoom] = useState(12);
+  const defaultCenter: GeoCoordinates = [4.886457648349382, -75.05073972036065];
+  const [mapCenter, setMapCenter] = useState<GeoCoordinates>(defaultCenter);
+  const [zoom, setZoom] = useState(13);
 
   useEffect(() => {
     if (geoJson && geoJson.features.length > 0) {
@@ -54,6 +55,9 @@ export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
     } else if (center) {
       setMapCenter(center);
       setZoom(15);
+    } else {
+      setMapCenter(defaultCenter);
+      setZoom(13);
     }
   }, [geoJson, center]);
 
@@ -62,10 +66,9 @@ export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
   };
   
   const geoJsonStyle = {
-    fillColor: "hsl(var(--accent))",
-    strokeColor: "hsl(var(--primary))",
+    fill: "hsl(var(--accent) / 0.3)",
+    stroke: "hsl(var(--primary))",
     strokeWidth: 2,
-    fillOpacity: 0.3,
   };
 
   return (
@@ -75,13 +78,13 @@ export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
         center={mapCenter}
         zoom={zoom}
         onClick={handleMapClick}
-        height_={"100%"}
+        height={"100%"}
       >
         {center && <Marker width={40} anchor={center} color="hsl(var(--primary))" />}
         {geoJson && 
             <GeoJson 
                 data={geoJson} 
-                styleCallback={(feature, hover) => {
+                styleCallback={(feature) => {
                     if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
                         return geoJsonStyle;
                     }

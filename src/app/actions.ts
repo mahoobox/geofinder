@@ -4,7 +4,7 @@ import type { FeatureCollection } from "geojson";
 
 export async function getParcelData(lat: number, lon: number): Promise<{ data?: FeatureCollection; error?: string }> {
   const baseUrl = process.env.BASE_URL_ARGIS_CATASTRAL;
-  const apiKey = process.env.API_KEY_CATASTRAL; // Reserved for future use if API requires a key
+  const apiKey = process.env.API_KEY_CATASTRAL; 
 
   if (!baseUrl) {
     return { error: "La URL base del servicio de catastro no está configurada en el servidor." };
@@ -12,7 +12,7 @@ export async function getParcelData(lat: number, lon: number): Promise<{ data?: 
 
   // The query is constructed for the ArcGIS REST API
   const queryParams = new URLSearchParams({
-    where: "1=1",
+    where: "1=1", // This is often used to get all features that intersect
     outFields: "*",
     geometry: `${lon},${lat}`,
     geometryType: "esriGeometryPoint",
@@ -27,12 +27,18 @@ export async function getParcelData(lat: number, lon: number): Promise<{ data?: 
   const fullUrl = `${baseUrl}/0/query?${queryParams.toString()}`;
 
   try {
-    const response = await fetch(fullUrl, {
-        headers: {
-            // Example of how an API key might be used in the future
-            // ...(apiKey && { 'Authorization': `Bearer ${apiKey}` })
-        }
-    });
+    const fetchOptions: RequestInit = {
+        headers: {}
+    };
+
+    if (apiKey) {
+      // ArcGIS can use tokens in different ways. A common way is via an 'Authorization' header.
+      // Another is a `token` query parameter. Adjust if the service requires a different method.
+      // For this service, it seems a token is not required for public access, but we prepare for it.
+      // (fetchOptions.headers as HeadersInit)['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(fullUrl, fetchOptions);
 
     if (!response.ok) {
       const errorText = await response.text();

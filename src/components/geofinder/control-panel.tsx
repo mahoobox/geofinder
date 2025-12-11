@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { FeatureCollection } from "geojson";
+import JSZip from "jszip";
 import {
   ClipboardCopy,
   Download,
@@ -10,6 +11,7 @@ import {
   Search,
   Trash2,
   View,
+  FileArchive
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -123,6 +125,30 @@ export default function ControlPanel({
     }
   };
 
+  const handleDownloadKmz = async () => {
+    if (!geoJson) return;
+    try {
+      const kmlString = geojsonToKml(geoJson);
+      const zip = new JSZip();
+      zip.file("doc.kml", kmlString);
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "parcela.kmz";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error de descarga",
+        description: "No se pudo generar el archivo KMZ.",
+      });
+    }
+  };
+
   return (
     <div className="bg-card text-card-foreground border-r overflow-y-auto">
       <ScrollArea className="h-full">
@@ -144,7 +170,7 @@ export default function ControlPanel({
                         <Input
                           type="number"
                           step="any"
-                          placeholder="-34.6037"
+                          placeholder="4.886458"
                           {...form.register("lat", { valueAsNumber: true })}
                         />
                       </FormControl>
@@ -156,7 +182,7 @@ export default function ControlPanel({
                         <Input
                           type="number"
                           step="any"
-                          placeholder="-58.3816"
+                          placeholder="-75.050740"
                           {...form.register("lng", { valueAsNumber: true })}
                         />
                       </FormControl>
@@ -225,6 +251,10 @@ export default function ControlPanel({
                     <Button onClick={handleDownloadKml} variant="secondary" className="flex-grow">
                       <Download />
                       Descargar KML
+                    </Button>
+                     <Button onClick={handleDownloadKmz} variant="secondary" className="flex-grow">
+                      <FileArchive />
+                      Descargar KMZ
                     </Button>
                 </div>
               </CardContent>
