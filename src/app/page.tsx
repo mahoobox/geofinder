@@ -28,9 +28,15 @@ export default function Home() {
     setGeoJson(null);
     setCoordinates(coords);
 
+    console.log("Iniciando consulta en el cliente con coordenadas:", coords);
+
     try {
       const result = await getParcelData(coords[0], coords[1]);
+      
+      console.log("Respuesta recibida en el cliente:", result);
+
       if (result.error) {
+        console.error("Error devuelto por la acción del servidor:", result.error);
         toast({
           variant: "destructive",
           title: "Error en la consulta",
@@ -38,6 +44,7 @@ export default function Home() {
         });
         setGeoJson(null);
       } else if (result.data) {
+        console.log("Datos GeoJSON recibidos:", result.data);
         setGeoJson(result.data);
         toast({
           title: "Consulta exitosa",
@@ -45,6 +52,7 @@ export default function Home() {
         });
       }
     } catch (error) {
+      console.error("Error inesperado en el cliente al procesar la solicitud:", error);
       toast({
         variant: "destructive",
         title: "Error inesperado",
