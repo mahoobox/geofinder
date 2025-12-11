@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -53,6 +54,7 @@ type ControlPanelProps = {
 
 export default function ControlPanel({
   coordinates,
+  setCoordinates,
   geoJson,
   isLoading,
   onQuery,
@@ -128,7 +130,7 @@ export default function ControlPanel({
       a.href = url;
       a.download = "parcela.kml";
       document.body.appendChild(a);
-a.click();
+      a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -152,7 +154,7 @@ a.click();
       a.href = url;
       a.download = "parcela.kmz";
       document.body.appendChild(a);
-a.click();
+      a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -165,106 +167,104 @@ a.click();
   };
 
   return (
-    <div className="bg-card text-card-foreground border-r overflow-y-auto">
-      <ScrollArea className="h-full">
-        <div className="p-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Entrada de Coordenadas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormItem>
-                    <FormLabel>Coordenadas (Lat, Lng)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="4.886458, -75.050740"
-                        {...form.register("coords")}
-                      />
-                    </FormControl>
-                     <FormDescription>
-                       Pegue las coordenadas o seleccione un punto en el mapa.
-                    </FormDescription>
-                    <FormMessage>{form.formState.errors.coords?.message}</FormMessage>
-                  </FormItem>
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="submit" disabled={isLoading} className="flex-grow bg-accent hover:bg-accent/90">
-                      {isLoading ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <Search />
-                      )}
-                      Consultar Parcela
-                    </Button>
-                     <Button
-                      type="button"
-                      variant="outline"
-                      onClick={onClear}
-                      disabled={isLoading}
-                      aria-label="Limpiar selección"
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+    <div className="bg-card text-card-foreground md:border-r h-full flex flex-col">
+      <div className="p-6 space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Entrada de Coordenadas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormItem>
+                  <FormLabel>Coordenadas (Lat, Lng)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="4.886458, -75.050740"
+                      {...form.register("coords")}
+                    />
+                  </FormControl>
+                    <FormDescription>
+                      Pegue las coordenadas o seleccione un punto en el mapa.
+                  </FormDescription>
+                  <FormMessage>{form.formState.errors.coords?.message}</FormMessage>
+                </FormItem>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="submit" disabled={isLoading} className="flex-grow bg-accent hover:bg-accent/90">
+                    {isLoading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Search />
+                    )}
+                    Consultar Parcela
+                  </Button>
+                    <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClear}
+                    disabled={isLoading}
+                    aria-label="Limpiar selección"
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
 
-          {geoJson && (
-             <div className="space-y-6">
-              <ParcelDetails feature={geoJson.features[0]} />
+        {geoJson && (
+          <div className="p-6 pt-0 space-y-6 flex-1 overflow-y-auto">
+            <ParcelDetails feature={geoJson.features[0]} />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl">Opciones de Datos</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                   <p className="text-sm text-muted-foreground">Visualice o descargue los datos del polígono de la parcela.</p>
-                  <div className="flex flex-wrap gap-2">
-                      <Dialog open={isGeoJsonDialogOpen} onOpenChange={setIsGeoJsonDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="secondary" className="flex-grow">
-                            <View />
-                            Ver GeoJSON
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Opciones de Datos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">Visualice o descargue los datos del polígono de la parcela.</p>
+                <div className="flex flex-wrap gap-2">
+                    <Dialog open={isGeoJsonDialogOpen} onOpenChange={setIsGeoJsonDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="secondary" className="flex-grow">
+                          <View />
+                          Ver GeoJSON
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-3xl">
+                        <DialogHeader>
+                          <DialogTitle>Datos GeoJSON de la Parcela</DialogTitle>
+                        </DialogHeader>
+                        <div className="relative">
+                          <ScrollArea className="h-96 w-full rounded-md border p-4 font-code text-sm">
+                            <pre>{JSON.stringify(geoJson, null, 2)}</pre>
+                          </ScrollArea>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="absolute top-2 right-2 h-8 w-8"
+                            onClick={handleCopyGeoJson}
+                          >
+                            <ClipboardCopy className="h-4 w-4" />
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-3xl">
-                          <DialogHeader>
-                            <DialogTitle>Datos GeoJSON de la Parcela</DialogTitle>
-                          </DialogHeader>
-                          <div className="relative">
-                            <ScrollArea className="h-96 w-full rounded-md border p-4 font-code text-sm">
-                              <pre>{JSON.stringify(geoJson, null, 2)}</pre>
-                            </ScrollArea>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="absolute top-2 right-2 h-8 w-8"
-                              onClick={handleCopyGeoJson}
-                            >
-                              <ClipboardCopy className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
 
-                      <Button onClick={handleDownloadKml} variant="secondary" className="flex-grow">
-                        <Download />
-                        Descargar KML
-                      </Button>
-                       <Button onClick={handleDownloadKmz} variant="secondary" className="flex-grow">
-                        <FileArchive />
-                        Descargar KMZ
-                      </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+                    <Button onClick={handleDownloadKml} variant="secondary" className="flex-grow">
+                      <Download />
+                      Descargar KML
+                    </Button>
+                      <Button onClick={handleDownloadKmz} variant="secondary" className="flex-grow">
+                      <FileArchive />
+                      Descargar KMZ
+                    </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
     </div>
   );
 }
