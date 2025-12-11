@@ -48,8 +48,13 @@ export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
         const latDiff = Math.abs(maxLat - minLat);
         const lngDiff = Math.abs(maxLng - minLng);
         const maxDiff = Math.max(latDiff, lngDiff);
-        const newZoom = Math.floor(Math.log2(360 / maxDiff));
-        setZoom(Math.min(newZoom, 18)); // Cap zoom level
+
+        if (maxDiff > 0) {
+          const newZoom = Math.floor(Math.log2(360 / maxDiff));
+          setZoom(Math.min(newZoom, 18)); // Cap zoom level
+        } else {
+          setZoom(18); // If there's no difference, zoom in close
+        }
       }
 
     } else if (center) {
@@ -78,7 +83,7 @@ export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
         center={mapCenter}
         zoom={zoom}
         onClick={handleMapClick}
-        height={"100%"}
+        height={undefined}
       >
         {center && <Marker width={40} anchor={center} color="hsl(var(--primary))" />}
         {geoJson && 
