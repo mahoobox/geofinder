@@ -1,4 +1,1 @@
-export type GeoCoordinates = {
-  lat: number;
-  lng: number;
-};
+export type GeoCoordinates = [number, number]; // [lat, lng]

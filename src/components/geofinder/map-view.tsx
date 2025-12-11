@@ -1,25 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  GeoJSON,
-  useMap,
-} from "react-leaflet";
-import type { FeatureCollection } from "geojson";
+import { useEffect, useState } from "react";
+import { Map, Marker, GeoJson } from "pigeon-maps";
+import { osm } from 'pigeon-maps/providers'
+import type { FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import type { GeoCoordinates } from "@/lib/types";
-import L from "leaflet";
-
-// Fix for default icon issues with webpack
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-});
-
 
 type MapViewProps = {
   center: GeoCoordinates | null;
@@ -27,88 +12,84 @@ type MapViewProps = {
   onMapClick: (coords: GeoCoordinates) => void;
 };
 
-function MapClickHandler({
-  onMapClick,
-}: {
-  onMapClick: (coords: GeoCoordinates) => void;
-}) {
-  useMap().on("click", (e) => {
-    onMapClick(e.latlng);
-  });
-  return null;
-}
-
-function ChangeView({ center, zoom }: { center: L.LatLngExpression; zoom: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [map, center, zoom]);
-  return null;
-}
-
-function GeoJsonLayer({ geoJson }: { geoJson: FeatureCollection | null }) {
-  const map = useMap();
+export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
+  const [mapCenter, setMapCenter] = useState<GeoCoordinates>([-34.6037, -58.3816]);
+  const [zoom, setZoom] = useState(12);
 
   useEffect(() => {
-    if (geoJson && map) {
-      const geoJsonLayer = L.geoJSON(geoJson);
-      const bounds = geoJsonLayer.getBounds();
-      if (bounds.isValid()) {
-        map.fitBounds(bounds);
+    if (geoJson && geoJson.features.length > 0) {
+      // Very basic bounding box calculation
+      let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+
+      const processCoords = (coords: any[]) => {
+        coords.forEach(c => {
+          if (Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number') {
+            const [lng, lat] = c;
+            minLng = Math.min(minLng, lng);
+            maxLng = Math.max(maxLng, lng);
+            minLat = Math.min(minLat, lat);
+            maxLat = Math.max(maxLat, lat);
+          } else {
+             processCoords(c);
+          }
+        });
+      };
+      
+      geoJson.features.forEach(feature => {
+          if (feature.geometry) {
+             processCoords(feature.geometry.coordinates);
+          }
+      });
+
+      if (isFinite(minLat) && isFinite(maxLat) && isFinite(minLng) && isFinite(maxLng)) {
+        setMapCenter([(minLat + maxLat) / 2, (minLng + maxLng) / 2]);
+        // Basic zoom level estimation
+        const latDiff = Math.abs(maxLat - minLat);
+        const lngDiff = Math.abs(maxLng - minLng);
+        const maxDiff = Math.max(latDiff, lngDiff);
+        const newZoom = Math.floor(Math.log2(360 / maxDiff));
+        setZoom(Math.min(newZoom, 18)); // Cap zoom level
       }
-    }
-  }, [geoJson, map]);
 
-  if (!geoJson) {
-    return null;
-  }
+    } else if (center) {
+      setMapCenter(center);
+      setZoom(15);
+    }
+  }, [geoJson, center]);
+
+  const handleMapClick = ({ latLng }: { latLng: [number, number] }) => {
+    onMapClick(latLng);
+  };
   
-  const style = {
+  const geoJsonStyle = {
     fillColor: "hsl(var(--accent))",
-    weight: 2,
-    opacity: 1,
-    color: "hsl(var(--primary))",
+    strokeColor: "hsl(var(--primary))",
+    strokeWidth: 2,
     fillOpacity: 0.3,
   };
 
-  return <GeoJSON data={geoJson} style={style} />;
-}
-
-
-export default function MapView({ center, geoJson, onMapClick }: MapViewProps) {
-  const [isClient, setIsClient] = useState(false);
-  const defaultCenter: L.LatLngExpression = [ -34.6037, -58.3816 ];
-  const mapRef = useRef<L.Map>(null);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (center && mapRef.current && !geoJson) {
-      mapRef.current.panTo(center);
-    }
-  }, [center, geoJson]);
-
-  if (!isClient) {
-    return null;
-  }
-
   return (
-    <MapContainer
-      ref={mapRef}
-      center={defaultCenter}
-      zoom={12}
-      className="w-full h-full border-none"
-      style={{ height: "100%", width: "100%" }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <MapClickHandler onMapClick={onMapClick} />
-      {center && <Marker position={center} />}
-      <GeoJsonLayer geoJson={geoJson} />
-    </MapContainer>
+    <div className="h-full w-full">
+      <Map
+        provider={osm}
+        center={mapCenter}
+        zoom={zoom}
+        onClick={handleMapClick}
+        height_={"100%"}
+      >
+        {center && <Marker width={40} anchor={center} color="hsl(var(--primary))" />}
+        {geoJson && 
+            <GeoJson 
+                data={geoJson} 
+                styleCallback={(feature, hover) => {
+                    if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+                        return geoJsonStyle;
+                    }
+                    return { strokeWidth: '0' }; // Don't render points or lines
+                }}
+            />
+        }
+      </Map>
+    </div>
   );
 }

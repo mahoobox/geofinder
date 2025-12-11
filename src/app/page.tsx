@@ -29,7 +29,7 @@ export default function Home() {
     setCoordinates(coords);
 
     try {
-      const result = await getParcelData(coords.lat, coords.lng);
+      const result = await getParcelData(coords[0], coords[1]);
       if (result.error) {
         toast({
           variant: "destructive",
