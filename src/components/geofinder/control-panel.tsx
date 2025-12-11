@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { geojsonToKml } from "@/lib/kml";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import type { GeoCoordinates } from "@/lib/types";
+import ParcelDetails from "./parcel-details";
 
 type FormValues = {
   coords: string;
@@ -127,7 +128,7 @@ export default function ControlPanel({
       a.href = url;
       a.download = "parcela.kml";
       document.body.appendChild(a);
-      a.click();
+a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -151,7 +152,7 @@ export default function ControlPanel({
       a.href = url;
       a.download = "parcela.kmz";
       document.body.appendChild(a);
-      a.click();
+a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -212,56 +213,58 @@ export default function ControlPanel({
           </Card>
 
           {geoJson && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Datos de la Parcela</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">La consulta fue exitosa. Puede ver o descargar los datos del polígono.</p>
-                <div className="flex flex-wrap gap-2">
-                    <Dialog open={isGeoJsonDialogOpen} onOpenChange={setIsGeoJsonDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="secondary" className="flex-grow">
-                          <View />
-                          Ver GeoJSON
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-3xl">
-                        <DialogHeader>
-                          <DialogTitle>Datos GeoJSON de la Parcela</DialogTitle>
-                        </DialogHeader>
-                        <div className="relative">
-                          <ScrollArea className="h-96 w-full rounded-md border p-4 font-code text-sm">
-                            <pre>{JSON.stringify(geoJson, null, 2)}</pre>
-                          </ScrollArea>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="absolute top-2 right-2 h-8 w-8"
-                            onClick={handleCopyGeoJson}
-                          >
-                            <ClipboardCopy className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+             <div className="space-y-6">
+              <ParcelDetails feature={geoJson.features[0]} />
 
-                    <Button onClick={handleDownloadKml} variant="secondary" className="flex-grow">
-                      <Download />
-                      Descargar KML
-                    </Button>
-                     <Button onClick={handleDownloadKmz} variant="secondary" className="flex-grow">
-                      <FileArchive />
-                      Descargar KMZ
-                    </Button>
-                </div>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl">Opciones de Datos</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                   <p className="text-sm text-muted-foreground">Visualice o descargue los datos del polígono de la parcela.</p>
+                  <div className="flex flex-wrap gap-2">
+                      <Dialog open={isGeoJsonDialogOpen} onOpenChange={setIsGeoJsonDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="secondary" className="flex-grow">
+                            <View />
+                            Ver GeoJSON
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl">
+                          <DialogHeader>
+                            <DialogTitle>Datos GeoJSON de la Parcela</DialogTitle>
+                          </DialogHeader>
+                          <div className="relative">
+                            <ScrollArea className="h-96 w-full rounded-md border p-4 font-code text-sm">
+                              <pre>{JSON.stringify(geoJson, null, 2)}</pre>
+                            </ScrollArea>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="absolute top-2 right-2 h-8 w-8"
+                              onClick={handleCopyGeoJson}
+                            >
+                              <ClipboardCopy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      <Button onClick={handleDownloadKml} variant="secondary" className="flex-grow">
+                        <Download />
+                        Descargar KML
+                      </Button>
+                       <Button onClick={handleDownloadKmz} variant="secondary" className="flex-grow">
+                        <FileArchive />
+                        Descargar KMZ
+                      </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
       </ScrollArea>
     </div>
   );
 }
-
-    
