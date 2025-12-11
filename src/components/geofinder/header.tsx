@@ -1,7 +1,7 @@
 import { MapPin } from "lucide-react";
-import EnvChecker from "./env-checker";
+import type { ReactNode } from "react";
 
-const Header = () => {
+const Header = ({ children }: { children?: ReactNode }) => {
   return (
     <header className="flex items-center justify-between p-4 border-b bg-card shadow-sm">
       <div className="flex items-center gap-3">
@@ -10,7 +10,9 @@ const Header = () => {
           GeoFinder
         </h1>
       </div>
-      <EnvChecker />
+      <div className="flex items-center gap-2">
+        {children}
+      </div>
     </header>
   );
 };

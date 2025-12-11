@@ -2,102 +2,139 @@
 "use client";
 
 import { useState } from "react";
-import type { FeatureCollection } from "geojson";
-import dynamic from 'next/dynamic';
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { login } from "@/app/auth/actions";
 
-import { getParcelData } from "@/app/actions";
-import ControlPanel from "@/components/geofinder/control-panel";
-import Header from "@/components/geofinder/header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import type { GeoCoordinates } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2, MapPin } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const MapView = dynamic(() => import('@/components/geofinder/map-view'), {
-  ssr: false,
-  loading: () => <div className="h-full w-full bg-muted flex items-center justify-center"><Skeleton className="h-full w-full" /></div>,
+const loginSchema = z.object({
+  username: z.string().min(1, { message: "El usuario es requerido." }),
+  password: z.string().min(1, { message: "La contraseña es requerida." }),
 });
 
+type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function Home() {
-  const [coordinates, setCoordinates] = useState<GeoCoordinates | null>(null);
-  const [geoJson, setGeoJson] = useState<FeatureCollection | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+export default function LoginPage() {
+  const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleQuery = async (coords: GeoCoordinates) => {
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    setGeoJson(null);
-    setCoordinates(coords);
-
-    console.log("Iniciando consulta en el cliente con coordenadas:", coords);
-
+    setError(null);
     try {
-      const result = await getParcelData(coords[0], coords[1]);
-      
-      console.log("Respuesta recibida en el cliente:", result);
-
-      if (result.error) {
-        console.error("Error devuelto por la acción del servidor:", result.error);
+      const result = await login(data);
+      if (result.success) {
         toast({
-          variant: "destructive",
-          title: "Error en la consulta",
-          description: result.error,
+          title: "Inicio de sesión exitoso",
+          description: "Redirigiendo a la aplicación...",
         });
-        setGeoJson(null);
-      } else if (result.data) {
-        console.log("Datos GeoJSON recibidos:", result.data);
-        setGeoJson(result.data);
-        toast({
-          title: "Consulta exitosa",
-          description: "Se encontró el polígono de la parcela.",
-        });
+        router.push("/geofinder");
+      } else {
+        setError(result.error || "Credenciales incorrectas.");
+        form.reset();
       }
-    } catch (error) {
-      console.error("Error inesperado en el cliente al procesar la solicitud:", error);
-      toast({
-        variant: "destructive",
-        title: "Error inesperado",
-        description:
-          "Ocurrió un error al procesar la solicitud. Por favor, inténtelo de nuevo.",
-      });
-      setGeoJson(null);
+    } catch (err) {
+      setError("Ocurrió un error inesperado. Por favor, intente de nuevo.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleMapClick = (coords: GeoCoordinates) => {
-    setCoordinates(coords);
-  };
-
-  const handleClear = () => {
-    setCoordinates(null);
-    setGeoJson(null);
-  };
-
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
-      <Header />
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        <div className="md:w-[400px] md:flex-shrink-0 flex flex-col overflow-y-auto md:pb-0">
-          <ControlPanel
-            coordinates={coordinates}
-            setCoordinates={setCoordinates}
-            geoJson={geoJson}
-            isLoading={isLoading}
-            onQuery={handleQuery}
-            onClear={handleClear}
-          />
-          <div className="mb-[600px] md:hidden" />
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4 sm:p-6 md:p-8">
+      <div className="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16">
+        <div className="flex flex-col justify-center space-y-6">
+          <div className="flex items-center gap-4">
+            <MapPin className="h-12 w-12 text-primary" />
+            <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">GeoFinder</h1>
+          </div>
+          <p className="text-lg text-muted-foreground">
+            Bienvenido a GeoFinder, su herramienta esencial para la visualización y consulta de datos geoespaciales.
+            Identifique polígonos de parcelas catastrales simplemente haciendo clic en el mapa o ingresando coordenadas.
+          </p>
+          <ul className="space-y-2 text-foreground list-disc list-inside">
+            <li>Consulta de parcelas por coordenadas.</li>
+            <li>Visualización interactiva de polígonos en el mapa.</li>
+            <li>Detalles catastrales como código, área y perímetro.</li>
+            <li>Exportación de datos en formatos GeoJSON, KML y KMZ.</li>
+          </ul>
         </div>
-        <div className="md:flex-1 h-[250px] md:h-full w-full fixed bottom-0 md:static">
-            <MapView
-              center={coordinates}
-              geoJson={geoJson}
-              onMapClick={handleMapClick}
-            />
+        
+        <div className="flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Iniciar Sesión</CardTitle>
+              <CardDescription>Acceda a la plataforma con sus credenciales.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Usuario</FormLabel>
+                        <FormControl>
+                          <Input placeholder="su-usuario" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contraseña</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertTitle>Error de autenticación</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      "Ingresar"
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
